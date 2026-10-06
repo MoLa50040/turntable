@@ -42,47 +42,66 @@ body.reflect.has-media #ambient{opacity:calc(var(--spread,.75) * .55)}
 /* ---------- deck ---------- */
 #deck{--w:min(94vw,calc((100dvh - 190px) * 1.32 * var(--scale)),calc(980px * var(--scale)));
   position:relative;width:var(--w);aspect-ratio:1.32/1;max-width:100%}
-.plinth{position:absolute;inset:0;border-radius:7%/9.2%;
+.plinth{position:absolute;z-index:1;inset:0;border-radius:7%/9.2%;
   background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.03) 45%,rgba(255,255,255,.08));
   border:2px solid var(--glass-edge);
   box-shadow:inset 0 0 0 6px rgba(255,255,255,.05),inset 0 2px 1px rgba(255,255,255,.55),inset 0 -3px 8px rgba(0,0,0,.25),0 30px 60px -20px rgba(0,0,0,.6),0 0 calc(var(--spread,.75)*70px) rgba(170,200,255,calc(var(--spread,.75)*.18));
   -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .plinth::after{content:"";position:absolute;inset:3%;border-radius:5%/7%;border:1px solid rgba(255,255,255,.16)}
 
-#platter{position:absolute;left:6%;top:50%;width:64%;aspect-ratio:1;transform:translateY(-50%);border-radius:50%}
-#platter::before{content:"";position:absolute;inset:-1.6%;border-radius:50%;background:linear-gradient(145deg,#c6ccd5,#59606b);box-shadow:0 10px 30px rgba(0,0,0,.55)}
+#platter{position:absolute;left:6%;top:7.76%;width:64%;aspect-ratio:1;border-radius:50%}
+#platter::before{content:"";position:absolute;z-index:2;inset:-1.6%;border-radius:50%;background:linear-gradient(145deg,#c6ccd5,#59606b);box-shadow:0 10px 30px rgba(0,0,0,.55)}
 .spin{position:absolute;inset:0;border-radius:50%;animation:spin var(--rev,1.8s) linear infinite;animation-play-state:paused}
 body.playing .spin{animation-play-state:running}
 @keyframes spin{to{transform:rotate(360deg)}}
-#grooves{background:
+#grooves{z-index:3;background:
   conic-gradient(from 20deg,rgba(255,255,255,0) 0deg,rgba(255,255,255,.10) 30deg,rgba(255,255,255,0) 70deg,rgba(255,255,255,0) 180deg,rgba(255,255,255,.08) 215deg,rgba(255,255,255,0) 250deg),
   repeating-radial-gradient(circle,#111 0 1.2px,#191919 1.6px 2.4px),#111;
   box-shadow:inset 0 0 0 2px #050505}
 #grooves::after{content:"";position:absolute;inset:31%;border-radius:50%;box-shadow:0 0 0 3px #0a0a0a}
 
-#video-wrap{position:absolute;inset:0;border-radius:50%;overflow:hidden;opacity:var(--vop,.58);transition:opacity .3s;pointer-events:none;
+/* video layer: behind the glass, blurred (bg) — or projected sharp on the record (disc) */
+#video-wrap{position:absolute;overflow:hidden;pointer-events:none;opacity:var(--vop,.7);transition:opacity .4s}
+body.mode-bg #video-wrap{z-index:0;inset:0;border-radius:7%/9.2%}
+body.mode-bg #video-wrap iframe,body.mode-bg #player{position:absolute;top:50%;left:50%;height:118%;width:calc(118% * 1.348);transform:translate(-50%,-50%);border:0;
+  filter:blur(var(--blur,24px)) saturate(1.35) brightness(.78)}
+body.mode-bg .plinth{-webkit-backdrop-filter:none;backdrop-filter:none;background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,0) 45%,rgba(255,255,255,.06))}
+body.mode-disc #video-wrap{z-index:4;left:6%;top:7.76%;width:64%;aspect-ratio:1;border-radius:50%;
   -webkit-mask-image:radial-gradient(circle,#000 62%,transparent 71%);mask-image:radial-gradient(circle,#000 62%,transparent 71%)}
-#video-wrap iframe,#player{position:absolute;top:0;left:50%;height:100%;width:177.8%;transform:translateX(-50%);border:0}
-body.projector #video-wrap iframe{filter:contrast(1.08) saturate(1.15) sepia(.12)}
+body.mode-disc #video-wrap iframe,body.mode-disc #player{position:absolute;top:0;left:50%;height:100%;width:177.8%;transform:translateX(-50%);border:0}
+body.mode-disc.projector #video-wrap iframe{filter:contrast(1.08) saturate(1.15) sepia(.12)}
 #fx{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .4s;
   background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px),radial-gradient(circle,transparent 40%,rgba(0,0,0,.55) 75%)}
-body.projector #fx{opacity:1;animation:flicker 3.2s steps(1) infinite}
+body.mode-disc.projector #fx{opacity:1;animation:flicker 3.2s steps(1) infinite}
 @keyframes flicker{0%,100%{opacity:1}47%{opacity:.82}48%{opacity:1}73%{opacity:.9}}
+/* first play on iPad must be a real tap on the YouTube frame: let taps fall through to it */
 body.needs-tap #video-wrap{pointer-events:auto}
+body.needs-tap .plinth,body.needs-tap #platter{pointer-events:none}
+/* peek: bring the real YouTube frame up front, sharp and tappable (skip ads, accept consent) */
+body.peek #video-wrap{position:fixed;z-index:40;left:50%;top:50%;right:auto;bottom:auto;inset:auto;left:50%;top:50%;width:min(calc(100vw - 32px),calc((100dvh - 140px) * 16 / 9));height:auto;aspect-ratio:16/9;transform:translate(-50%,-50%);
+  border-radius:14px;opacity:1;pointer-events:auto;-webkit-mask-image:none;mask-image:none;box-shadow:0 30px 80px rgba(0,0,0,.7)}
+body.peek #video-wrap iframe,body.peek #player{top:0;left:0;width:100%;height:100%;transform:none;filter:none}
+body.peek #fx{display:none}
+#peek-bg{position:fixed;inset:0;z-index:39;background:rgba(8,10,14,.82);display:none}
+body.peek #peek-bg{display:block}
+#peek-close{position:fixed;z-index:41;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);height:44px;padding:0 22px;border-radius:99px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);font-weight:500;display:none}
+body.peek #peek-close{display:block}
+#peek-tip{position:fixed;z-index:41;left:50%;top:calc(env(safe-area-inset-top,0px) + 20px);transform:translateX(-50%);font-size:13px;color:var(--ink-dim);white-space:nowrap;display:none}
+body.peek #peek-tip{display:block}
 
-#label{inset:33%;background:var(--accent) center/cover;box-shadow:inset 0 0 0 2px rgba(0,0,0,.25),inset 0 0 22px rgba(0,0,0,.35);pointer-events:none}
+#label{z-index:5;inset:33%;background:var(--accent) center/cover;box-shadow:inset 0 0 0 2px rgba(0,0,0,.25),inset 0 0 22px rgba(0,0,0,.35);pointer-events:none}
 #label::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,transparent 0 6%,rgba(0,0,0,.15) 6.5% 7%,transparent 7.5%)}
-.spindle{position:absolute;left:50%;top:50%;width:3.2%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#9aa1ab 60%,#4a4f57);box-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
-#disc-hit{position:absolute;inset:0;border-radius:50%}
+.spindle{position:absolute;z-index:6;left:50%;top:50%;width:3.2%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#9aa1ab 60%,#4a4f57);box-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
+#disc-hit{position:absolute;z-index:7;inset:0;border-radius:50%}
 body.needs-tap #disc-hit{pointer-events:none}
 
-#tap-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:8px 14px;border-radius:99px;background:rgba(10,14,20,.78);font-size:13px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .3s}
+#tap-hint{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);padding:8px 14px;border-radius:99px;background:rgba(10,14,20,.78);font-size:13px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .3s}
 body.needs-tap #tap-hint{opacity:1}
 
-#arm{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+#arm{position:absolute;z-index:9;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 #arm-rot{transform-box:view-box;transform-origin:1110px 170px;transform:rotate(var(--arm,0deg));transition:transform 1.1s cubic-bezier(.5,0,.2,1)}
 
-.deck-ctrls{position:absolute;right:4.5%;bottom:8%;display:flex;flex-direction:column;align-items:flex-end;gap:clamp(8px,1.6vw,14px)}
+.deck-ctrls{position:absolute;z-index:10;right:4.5%;bottom:8%;display:flex;flex-direction:column;align-items:flex-end;gap:clamp(8px,1.6vw,14px)}
 .glass-btn{display:grid;place-items:center;min-width:44px;height:36px;padding:0 10px;border-radius:10px;border:1.5px solid var(--glass-edge);background:var(--glass);color:var(--ink);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:background .2s,border-color .2s}
 .glass-btn:active{background:rgba(255,255,255,.22)}
 .glass-btn[aria-pressed="true"]{background:rgba(232,93,74,.28);border-color:rgba(255,160,140,.7)}
@@ -105,6 +124,8 @@ body.playing.idle #bar,body.playing.idle .deck-ctrls{opacity:.28}
 #bar .ic{width:44px;height:44px;display:grid;place-items:center;border-radius:10px;flex:none}
 #bar .ic:active{background:rgba(255,255,255,.12)}
 #bar .ic svg{width:22px;height:22px}
+#bar .ic{position:relative}
+.badge{position:absolute;top:4px;right:3px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--accent);font:600 11px/17px var(--mono);text-align:center}
 .sep{width:1px;height:26px;background:rgba(255,255,255,.25);margin:0 6px;flex:none}
 #url{flex:1;min-width:0;height:44px;background:transparent;border:0;outline:0;font:14px var(--mono);color:var(--ink);-webkit-user-select:text;user-select:text}
 #url::placeholder{color:var(--ink-dim)}
@@ -137,9 +158,20 @@ body.playing.idle #bar,body.playing.idle .deck-ctrls{opacity:.28}
 .note{font-size:12px;color:var(--ink-dim);margin:8px 0 0}
 
 #queue ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
-#queue li button{display:flex;align-items:center;gap:12px;width:100%;padding:6px;border-radius:10px;text-align:left}
-#queue li button:active{background:rgba(255,255,255,.08)}
-#queue li.cur button{background:rgba(232,93,74,.2)}
+.r-form{display:flex;gap:6px;margin-bottom:6px}
+.r-form input{flex:1;min-width:0;height:40px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);font:13px var(--mono);outline:0;-webkit-user-select:text;user-select:text}
+.r-form input:focus{border-color:rgba(255,170,150,.7)}
+.r-form button{height:40px;padding:0 16px;border-radius:10px;background:var(--accent);font-weight:600;font-size:14px}
+.q-h{display:flex;align-items:center;gap:6px;margin:14px 0 6px;font-size:12px;font-weight:600;color:var(--ink-dim);letter-spacing:.04em}
+.q-clear{margin-left:auto;font-size:12px;color:var(--ink-dim);padding:6px}
+.r-item{display:flex;align-items:center;gap:4px}
+.r-item>button.main{flex:1;min-width:0}
+.mini{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:8px;color:var(--ink-dim);font-size:16px}
+.mini:active{background:rgba(255,255,255,.1)}
+.mini:disabled{opacity:.25}
+#queue li button.main{display:flex;align-items:center;gap:12px;width:100%;padding:6px;border-radius:10px;text-align:left}
+#queue li button.main:active{background:rgba(255,255,255,.08)}
+#queue li.cur button.main{background:rgba(232,93,74,.2)}
 #queue img{width:64px;height:36px;object-fit:cover;border-radius:5px;flex:none;background:#000}
 #queue .t{font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 #queue .n{font:11px var(--mono);color:var(--ink-dim);width:22px;flex:none;text-align:right;font-variant-numeric:tabular-nums}
@@ -149,18 +181,18 @@ body.playing.idle #bar,body.playing.idle .deck-ctrls{opacity:.28}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 
 @media (max-width:600px){ .deck-ctrls{right:3%;bottom:5%;gap:6px} .vol{padding:0 8px} input[type=range]{width:70px} .round{width:36px;height:36px} .round svg{width:22px;height:22px} }
-@media (prefers-reduced-motion:reduce){ .spin{animation:none} #arm-rot{transition:none} body.projector #fx{animation:none} }
+@media (prefers-reduced-motion:reduce){ .spin{animation:none} #arm-rot{transition:none} body.mode-disc.projector #fx{animation:none} }
 </style>
 </head>
-<body class="slow reflect projector">
+<body class="slow reflect projector mode-bg">
 <div id="ambient"></div>
 
 <main id="stage">
   <div id="deck">
+    <div id="video-wrap"><div id="player"></div><div id="fx"></div></div>
     <div class="plinth"></div>
     <div id="platter">
       <div id="grooves" class="spin"></div>
-      <div id="video-wrap"><div id="player"></div><div id="fx"></div></div>
       <div id="label" class="spin"></div>
       <div class="spindle"></div>
       <button id="disc-hit" aria-label="재생 / 일시정지"></button>
@@ -190,6 +222,7 @@ body.playing.idle #bar,body.playing.idle .deck-ctrls{opacity:.28}
       <button class="glass-btn round" id="btn-settings" aria-label="설정">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M4.2 7.5l2 1.2M17.8 15.3l2 1.2M4.2 16.5l2-1.2M17.8 8.7l2-1.2"/><circle cx="12" cy="12" r="7"/></svg>
       </button>
+      <button class="glass-btn" id="btn-peek" aria-label="영상 크게 보기 (광고 건너뛰기)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg></button>
       <button class="glass-btn cc" id="btn-cc" aria-pressed="false" aria-label="자막">CC</button>
       <div class="vol">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" id="vol-ic"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7" id="vol-wave"/></svg>
@@ -204,21 +237,30 @@ body.playing.idle #bar,body.playing.idle .deck-ctrls{opacity:.28}
     <button type="button" class="ic" id="btn-next" aria-label="다음"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg></button>
     <span class="sep"></span>
     <input id="url" type="url" inputmode="url" enterkeyhint="go" placeholder="유튜브 링크 붙여넣기 → Enter" aria-label="유튜브 링크">
-    <button type="submit" class="ic" aria-label="불러오기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 6v6a3 3 0 0 1-3 3H6"/><path d="M9 11l-4 4 4 4"/></svg></button>
-    <button type="button" class="ic" id="btn-queue" aria-label="재생목록"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+    <button type="submit" class="ic" aria-label="바로 재생"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 6v6a3 3 0 0 1-3 3H6"/><path d="M9 11l-4 4 4 4"/></svg></button>
+    <button type="button" class="ic" id="btn-reserve" aria-label="예약에 추가"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h10M4 12h10M4 17h6"/><path d="M18 13v8M14 17h8"/></svg></button>
+    <button type="button" class="ic" id="btn-queue" aria-label="재생목록"><span class="badge" id="q-badge" hidden></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
   </form>
-  <div id="now">링크를 넣으면 영상이 판 위에 비쳐요. 영상 · 재생목록 · 믹스 모두 돼요.</div>
+  <div id="now">링크를 넣으면 영상이 턴테이블 뒤로 흐리게 비쳐요. 영상 · 재생목록 · 믹스 모두 돼요.</div>
 </main>
 
 <aside class="sheet" id="settings" aria-label="설정">
   <header><h2>설정</h2><button class="x" data-close aria-label="닫기">×</button></header>
+  <div class="row"><span>영상 위치</span>
+    <div class="seg" id="mode"><button data-m="bg" aria-pressed="true">배경 블러</button><button data-m="disc" aria-pressed="false">판 위</button></div>
+  </div>
+  <div class="slider-block" id="blur-block">
+    <div class="row"><span>배경 흐림</span><small id="blur-v">24px</small></div>
+    <input type="range" id="s-blur" min="0" max="60" value="24">
+    <div class="sub"><span>선명</span><span>흐림</span></div>
+  </div>
   <div class="slider-block">
     <div class="row"><span>영상 불투명도</span><small id="vop-v">58%</small></div>
     <input type="range" id="s-vop" min="0" max="100" value="58">
     <div class="sub"><span>투명</span><span>불투명</span></div>
   </div>
   <div class="row"><span>레코드 천천히 회전</span><button class="sw" role="switch" data-cls="slow" aria-checked="true" aria-label="레코드 천천히 회전"></button></div>
-  <div class="row"><span>프로젝터 효과</span><button class="sw" role="switch" data-cls="projector" aria-checked="true" aria-label="프로젝터 효과"></button></div>
+  <div class="row" id="proj-row"><span>프로젝터 효과</span><button class="sw" role="switch" data-cls="projector" aria-checked="true" aria-label="프로젝터 효과"></button></div>
   <div class="row"><span>영상 색 반사</span><button class="sw" role="switch" data-cls="reflect" aria-checked="true" aria-label="영상 색 반사"></button></div>
   <div class="row"><span>화면 꺼짐 방지</span><button class="sw" role="switch" id="sw-wake" aria-checked="false" aria-label="화면 꺼짐 방지"></button></div>
   <div class="slider-block">
@@ -231,14 +273,25 @@ body.playing.idle #bar,body.playing.idle .deck-ctrls{opacity:.28}
   <div class="links">
     <a id="yt-link" href="https://www.youtube.com" target="_blank" rel="noopener">유튜브 페이지 보기</a>
   </div>
+  <p class="note">광고는 유튜브가 직접 넣는 거라 여기서 끌 수 없어요. 사파리에서 YouTube Premium 계정으로 로그인해 두면 이 화면에서도 광고 없이 나와요.</p>
   <p class="note">음량 슬라이더는 0으로 내리면 음소거돼요. 아이패드는 기기 음량 버튼이 실제 음량을 정해요.</p>
 </aside>
 
 <aside class="sheet" id="queue" aria-label="재생목록">
   <header><h2>재생목록</h2><button class="x" data-close aria-label="닫기">×</button></header>
+  <form id="r-form" class="r-form" autocomplete="off">
+    <input id="r-url" type="url" inputmode="url" enterkeyhint="done" placeholder="예약할 링크 붙여넣기" aria-label="예약할 유튜브 링크">
+    <button type="submit">예약</button>
+  </form>
+  <h3 class="q-h">다음에 재생 <span id="r-count"></span><button type="button" id="r-clear" class="q-clear" hidden>모두 지우기</button></h3>
+  <ol id="r-list"></ol>
+  <h3 class="q-h">지금 재생목록</h3>
   <ol id="q-list"></ol>
 </aside>
 
+<div id="peek-bg"></div>
+<div id="peek-tip">광고가 나오면 영상 안의 ‘건너뛰기’를 탭하세요</div>
+<button id="peek-close" type="button">턴테이블로 돌아가기</button>
 <div id="toast" role="status"></div>
 
 <script>
@@ -246,14 +299,19 @@ const $=s=>document.querySelector(s), body=document.body, root=document.document
 const store={get(k,d){try{const v=localStorage.getItem('tt.'+k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){try{localStorage.setItem('tt.'+k,JSON.stringify(v))}catch{}}};
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),2400)}
 function fillRange(el){el.style.setProperty('--p',(el.value-el.min)/(el.max-el.min)*100+'%')}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* ---------- settings ---------- */
-const S=Object.assign({vop:58,spread:75,size:1,slow:true,projector:true,reflect:true,cc:false,vol:80},store.get('settings',{}));
+const S=Object.assign({vop:70,spread:75,size:1,slow:true,projector:true,reflect:true,cc:false,vol:80,mode:'bg',blur:24},store.get('settings',{}));
 function applySettings(){
   root.style.setProperty('--vop',S.vop/100); $('#s-vop').value=S.vop; $('#vop-v').textContent=S.vop+'%';
   root.style.setProperty('--spread',S.spread/100); $('#s-spread').value=S.spread; $('#spread-v').textContent=S.spread+'%';
+  root.style.setProperty('--blur',S.blur+'px'); $('#s-blur').value=S.blur; $('#blur-v').textContent=S.blur+'px';
   root.style.setProperty('--scale',S.size); root.style.setProperty('--barw',Math.round(760*S.size)+'px');
   document.querySelectorAll('#size button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.s===S.size));
+  document.querySelectorAll('#mode button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===S.mode));
+  body.classList.toggle('mode-bg',S.mode==='bg'); body.classList.toggle('mode-disc',S.mode==='disc');
+  $('#blur-block').hidden=S.mode!=='bg'; $('#proj-row').hidden=S.mode!=='disc';
   ['slow','projector','reflect'].forEach(k=>{body.classList.toggle(k,S[k]);document.querySelector(`[data-cls=${k}]`).setAttribute('aria-checked',S[k])});
   root.style.setProperty('--rev',S.slow?'5.5s':'1.8s');
   $('#btn-cc').setAttribute('aria-pressed',S.cc); $('#vol').value=S.vol;
@@ -264,8 +322,10 @@ function applySettings(){
 applySettings();
 $('#s-vop').oninput=e=>{S.vop=+e.target.value;applySettings()};
 $('#s-spread').oninput=e=>{S.spread=+e.target.value;applySettings()};
+$('#s-blur').oninput=e=>{S.blur=+e.target.value;applySettings()};
 document.querySelectorAll('[data-cls]').forEach(b=>b.onclick=()=>{const k=b.dataset.cls;S[k]=!S[k];applySettings()});
 document.querySelectorAll('#size button').forEach(b=>b.onclick=()=>{S.size=+b.dataset.s;applySettings()});
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{S.mode=b.dataset.m;applySettings()});
 
 let wake=null, wantWake=false;
 $('#sw-wake').onclick=async e=>{
@@ -279,7 +339,7 @@ document.addEventListener('visibilitychange',async()=>{if(document.visibilitySta
 /* sheets */
 function openSheet(id){document.querySelectorAll('.sheet').forEach(s=>s.classList.toggle('open',s.id===id&&!s.classList.contains('open')))}
 $('#btn-settings').onclick=()=>openSheet('settings');
-$('#btn-queue').onclick=()=>{renderQueue();openSheet('queue')};
+$('#btn-queue').onclick=()=>{renderQueue();renderReserve();openSheet('queue')};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.sheet').classList.remove('open'));
 
 /* idle dimming */
@@ -293,73 +353,116 @@ function parse(s){
   const m0=s.match(/https?:\/\/\S+/); if(m0) s=m0[0];
   let u; try{u=new URL(/^https?:/.test(s)?s:'https://'+s)}catch{return null}
   const host=u.hostname.replace(/^(www|m|music)\./,''); const p=u.searchParams;
+  if(!/youtube\.com$|youtu\.be$|youtube-nocookie\.com$/.test(host)) return null;
   let v=p.get('v'), list=p.get('list');
   if(host==='youtu.be') v=u.pathname.slice(1).split('/')[0];
   const m=u.pathname.match(/\/(shorts|embed|live|v)\/([\w-]{11})/); if(m) v=m[2];
-  if(!/youtube\.com$|youtu\.be$|youtube-nocookie\.com$/.test(host)) return null;
   if(v&&!/^[\w-]{11}$/.test(v)) v=null;
   if(!v&&!list) return null;
   const t=p.get('t')||p.get('start'); let start=0;
-  if(t){const mm=t.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?/);start=t.match(/^\d+$/)?+t:((+mm[1]||0)*3600+(+mm[2]||0)*60+(+mm[3]||0))}
+  if(t){const mm=t.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?/);start=/^\d+$/.test(t)?+t:((+mm[1]||0)*3600+(+mm[2]||0)*60+(+mm[3]||0))}
   return {v,list,index:Math.max(0,(+p.get('index')||1)-1),start};
 }
 
-/* ---------- player ---------- */
-let player=null, ready=false, started=false, current=null, titles={};
-window.onYouTubeIframeAPIReady=()=>{ready=true; if(pending){load(pending);pending=null}};
-let pending=null;
+/* ---------- titles (oEmbed, no API key) ---------- */
+const titles={}, tq={};
+function fetchTitle(url,key){
+  if(titles[key]) return Promise.resolve(titles[key]);
+  return tq[key]||(tq[key]=fetch(`https://noembed.com/embed?url=${encodeURIComponent(url)}`).then(r=>r.json()).then(j=>{if(j.title)titles[key]=j.title;return j.title||null}).catch(()=>null));
+}
+const watchUrl=src=>src.v?`https://www.youtube.com/watch?v=${src.v}${src.list?'&list='+src.list:''}`:`https://www.youtube.com/playlist?list=${src.list}`;
+
+/* ---------- player (created once, reused so the next song can start on its own) ---------- */
+let player=null, ready=false, started=false, current=null, pending=null, seekTo=null;
+window.onYouTubeIframeAPIReady=()=>{ready=true; if(pending){const p=pending;pending=null;load(p)}};
+
 function load(src){
-  if(!ready){pending=src;toast('플레이어 준비 중…');return}
-  current=src; started=false; body.classList.remove('playing'); setArm();
-  body.classList.add('has-media');
-  if(player){try{player.destroy()}catch{} const d=document.createElement('div');d.id='player';$('#video-wrap').prepend(d)}
-  const vars={playsinline:1,controls:0,rel:0,modestbranding:1,iv_load_policy:3,disablekb:1,fs:0,autoplay:1,cc_load_policy:S.cc?1:0,cc_lang_pref:'ko',hl:'ko',start:src.start||0,origin:location.origin};
-  if(src.list){vars.list=src.list;vars.listType='playlist';if(!src.v)vars.index=src.index}
-  player=new YT.Player('player',{videoId:src.v||undefined,playerVars:vars,events:{
-    onReady:e=>{applyVolume();try{e.target.playVideo()}catch{} setTimeout(()=>{if(!started)body.classList.add('needs-tap')},1500); updateMeta()},
-    onStateChange:onState,
-    onError:e=>{const msg={2:'링크 형식이 올바르지 않아요',5:'이 영상은 재생할 수 없어요',100:'영상을 찾을 수 없어요 (삭제·비공개)',101:'이 영상은 다른 사이트에서 재생이 막혀 있어요',150:'이 영상은 다른 사이트에서 재생이 막혀 있어요'}[e.data]||'재생 오류가 생겼어요';toast(msg); if(player.getPlaylist&&player.getPlaylist()?.length>1) setTimeout(()=>player.nextVideo(),1200)}
-  }});
+  if(!ready){pending=src;return}
+  current=src; body.classList.add('has-media');
+  seekTo=(src.list&&src.v)?src.v:null;
+  if(!player){
+    const vars={playsinline:1,controls:0,rel:0,modestbranding:1,iv_load_policy:3,disablekb:1,fs:0,autoplay:1,cc_load_policy:S.cc?1:0,cc_lang_pref:'ko',hl:'ko',start:src.start||0,origin:location.origin};
+    if(src.list){vars.list=src.list;vars.listType='playlist';if(!src.v)vars.index=src.index}
+    player=new YT.Player('player',{videoId:src.v||undefined,playerVars:vars,events:{
+      onReady:e=>{applyVolume();try{e.target.playVideo()}catch{} setTimeout(()=>{if(!started)body.classList.add('needs-tap')},1500); updateMeta()},
+      onStateChange:onState,
+      onError:onErr
+    }});
+    return;
+  }
+  if(src.list){
+    player.loadPlaylist({list:src.list,listType:'playlist',index:src.v?0:src.index,startSeconds:src.start||0});
+  }else{
+    player.loadVideoById({videoId:src.v,startSeconds:src.start||0});
+  }
+  if(!started) setTimeout(()=>{if(!started)body.classList.add('needs-tap')},1500);
+}
+function onErr(e){
+  const msg={2:'링크 형식이 올바르지 않아요',5:'이 영상은 재생할 수 없어요',100:'영상을 찾을 수 없어요 (삭제·비공개)',101:'이 영상은 다른 사이트 재생이 막혀 있어요',150:'이 영상은 다른 사이트 재생이 막혀 있어요'}[e.data]||'재생 오류가 생겼어요';
+  toast(msg+' · 다음 곡으로 넘어가요'); setTimeout(next,1500);
 }
 function onState(e){
-  const st=e.data;
-  if(st===YT.PlayerState.PLAYING){started=true;body.classList.add('playing');body.classList.remove('needs-tap');if(S.cc)ccOn()}
-  else if(st===YT.PlayerState.PAUSED||st===YT.PlayerState.ENDED||st===YT.PlayerState.CUED){body.classList.remove('playing')}
+  const st=e.data, P=YT.PlayerState;
+  if(st===P.PLAYING){
+    started=true;body.classList.add('playing');body.classList.remove('needs-tap');if(S.cc)ccOn();
+    if(seekTo){const pl=player.getPlaylist()||[];const i=pl.indexOf(seekTo);const want=seekTo;seekTo=null;if(i>0&&player.getPlaylistIndex()!==i&&player.getVideoData().video_id!==want)player.playVideoAt(i)}
+  }
+  else if(st===P.PAUSED||st===P.CUED){body.classList.remove('playing')}
+  else if(st===P.ENDED){
+    body.classList.remove('playing');
+    const pl=player.getPlaylist?.()||[], i=player.getPlaylistIndex?.();
+    const atEnd=!pl.length||i>=pl.length-1;
+    if(atEnd&&reserve.length) playReserved();
+  }
   $('#play-ic').innerHTML=body.classList.contains('playing')?'<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/>':'<path d="M7 4.5v15l12.5-7.5z"/>';
   setArm(); updateMeta();
 }
 function updateMeta(){
   if(!player||!player.getVideoData) return;
   const d=player.getVideoData()||{}; const id=d.video_id;
-  if(id){
-    const thumb=`https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-    $('#label').style.backgroundImage=`url(${thumb})`; $('#ambient').style.backgroundImage=`url(${thumb})`;
-    if(d.title) titles[id]=d.title;
-    const pl=player.getPlaylist?.()||[]; const i=player.getPlaylistIndex?.();
-    $('#now').innerHTML=d.title?`<b></b>${pl.length>1?` · ${i+1}/${pl.length}`:''}`:'';
-    if(d.title) $('#now b').textContent=d.title;
-    $('#yt-link').href=`https://www.youtube.com/watch?v=${id}`+(current?.list?`&list=${current.list}`:'');
-    if($('#queue').classList.contains('open')) renderQueue();
+  if(!id) return;
+  const thumb=`https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+  $('#label').style.backgroundImage=`url(${thumb})`; $('#ambient').style.backgroundImage=`url(${thumb})`;
+  if(d.title) titles[id]=d.title;
+  const pl=player.getPlaylist?.()||[]; const i=player.getPlaylistIndex?.();
+  if(d.title){
+    let extra=pl.length>1?` · ${i+1}/${pl.length}`:'';
+    if(reserve.length) extra+=` · 예약 ${reserve.length}곡`;
+    $('#now').innerHTML='<b></b>'+esc(extra); $('#now b').textContent=d.title;
   }
+  $('#yt-link').href=`https://www.youtube.com/watch?v=${id}`+(current?.list?`&list=${current.list}`:'');
+  if($('#queue').classList.contains('open')) renderQueue();
 }
 function setArm(){
   let a=0;
-  if(body.classList.contains('playing')||(started&&player?.getPlayerState?.()===2)){
+  if(body.classList.contains('playing')){
     let f=0; try{const d=player.getDuration(),t=player.getCurrentTime(); if(d>0) f=Math.min(1,t/d)}catch{}
-    a=body.classList.contains('playing')?15+f*18:0;
+    a=15+f*18;
   }
   root.style.setProperty('--arm',a+'deg');
 }
 setInterval(()=>{if(body.classList.contains('playing'))setArm()},4000);
 
 function togglePlay(){
-  if(!player){ $('#url').focus(); toast('먼저 유튜브 링크를 넣어주세요'); return }
+  if(!player){
+    if(reserve.length){playReserved();return}
+    $('#url').focus(); toast('먼저 유튜브 링크를 넣어주세요'); return }
   if(!started){body.classList.add('needs-tap');try{player.playVideo()}catch{} return}
   body.classList.contains('playing')?player.pauseVideo():player.playVideo();
 }
+function next(){
+  if(!player) return;
+  const pl=player.getPlaylist?.()||[], i=player.getPlaylistIndex?.();
+  if(pl.length>1&&i<pl.length-1) player.nextVideo();
+  else if(reserve.length) playReserved();
+  else toast('다음 곡이 없어요. 링크를 예약해 보세요');
+}
+function peek(on){body.classList.toggle('peek',on)}
+$('#btn-peek').onclick=()=>{if(!player){toast('먼저 유튜브 링크를 넣어주세요');return} peek(true)};
+$('#peek-close').onclick=()=>peek(false); $('#peek-bg').onclick=()=>peek(false);
 $('#disc-hit').onclick=togglePlay; $('#btn-play').onclick=togglePlay;
-$('#btn-next').onclick=()=>{if(!player)return; const pl=player.getPlaylist?.(); pl&&pl.length>1?player.nextVideo():toast('다음 곡이 없어요')};
-$('#btn-prev').onclick=()=>{if(!player)return; const pl=player.getPlaylist?.(); (pl&&pl.length>1&&player.getCurrentTime()<4)?player.previousVideo():player.seekTo(0,true)};
+$('#btn-next').onclick=next;
+$('#btn-prev').onclick=()=>{if(!player)return; const pl=player.getPlaylist?.(); (pl&&pl.length>1&&player.getPlaylistIndex()>0&&player.getCurrentTime()<4)?player.previousVideo():player.seekTo(0,true)};
 
 function applyVolume(){ if(!player?.setVolume) return; if(S.vol===0){player.mute()}else{player.unMute();player.setVolume(S.vol)} }
 $('#vol').oninput=e=>{S.vol=+e.target.value;applySettings();applyVolume()};
@@ -367,37 +470,76 @@ $('#vol').oninput=e=>{S.vol=+e.target.value;applySettings();applyVolume()};
 function ccOn(){try{player.loadModule('captions');player.setOption('captions','track',{languageCode:'ko'})}catch{}}
 $('#btn-cc').onclick=()=>{S.cc=!S.cc;applySettings(); if(!player)return; if(S.cc){ccOn();toast('자막 켬 (영상에 자막이 있을 때)')}else{try{player.unloadModule('captions')}catch{} toast('자막 끔')}};
 
-/* queue */
+/* ---------- reserve queue (다음에 재생) ---------- */
+let reserve=store.get('reserve',[]).filter(r=>r&&r.src);
+function saveReserve(){store.set('reserve',reserve);const b=$('#q-badge');b.hidden=!reserve.length;b.textContent=reserve.length;renderReserve();updateMeta()}
+function addReserve(raw){
+  const src=parse(raw); if(!src){toast('유튜브 영상·재생목록 링크를 넣어주세요');return false}
+  const item={raw:raw.trim(),src,key:src.v||src.list};
+  reserve.push(item); saveReserve();
+  fetchTitle(watchUrl(src),item.key).then(()=>renderReserve());
+  if(!player){toast('예약했어요 · 판을 탭하면 시작해요')}
+  else toast(`예약했어요 · ${reserve.length}번째`);
+  return true;
+}
+function playReserved(i=0){
+  const [item]=reserve.splice(i,1); saveReserve();
+  if(item){ $('#url').value=item.raw; store.set('last',item.raw); load(item.src); toast('예약한 곡 재생'); }
+}
+function renderReserve(){
+  const ol=$('#r-list'); $('#r-count').textContent=reserve.length?`· ${reserve.length}`:''; $('#r-clear').hidden=!reserve.length;
+  if(!reserve.length){ol.innerHTML='<li class="empty">링크를 예약하면 지금 곡(재생목록)이 끝난 뒤 순서대로 이어서 재생돼요.</li>';return}
+  ol.innerHTML='';
+  reserve.forEach((it,i)=>{
+    const li=document.createElement('li'); li.className='r-item';
+    const img=it.src.v?`https://i.ytimg.com/vi/${it.src.v}/mqdefault.jpg`:'';
+    li.innerHTML=`<button type="button" class="main"><span class="n">${i+1}</span>${img?`<img alt="" src="${img}">`:'<img alt="">'}<span class="t"></span></button>
+      <button type="button" class="mini up" aria-label="위로">↑</button><button type="button" class="mini del" aria-label="빼기">×</button>`;
+    li.querySelector('.t').textContent=titles[it.key]||(it.src.v?'불러오는 중…':'재생목록');
+    li.querySelector('.up').disabled=i===0;
+    li.querySelector('.main').onclick=()=>{playReserved(i);$('#queue').classList.remove('open')};
+    li.querySelector('.up').onclick=()=>{[reserve[i-1],reserve[i]]=[reserve[i],reserve[i-1]];saveReserve()};
+    li.querySelector('.del').onclick=()=>{reserve.splice(i,1);saveReserve()};
+    ol.appendChild(li);
+    if(!titles[it.key]) fetchTitle(watchUrl(it.src),it.key).then(t=>{if(t)li.querySelector('.t').textContent=t});
+  });
+}
+$('#r-clear').onclick=()=>{reserve=[];saveReserve()};
+$('#r-form').onsubmit=e=>{e.preventDefault(); if(addReserve($('#r-url').value)) $('#r-url').value=''};
+$('#btn-reserve').onclick=()=>{ const v=$('#url').value; if(!v.trim()){renderQueue();renderReserve();openSheet('queue');setTimeout(()=>$('#r-url').focus(),350);return} if(addReserve(v)){ if(current) $('#url').value=''; } };
+
+/* ---------- current playlist ---------- */
 function renderQueue(){
-  const ol=$('#q-list'); const pl=player?.getPlaylist?.()||[]; const cur=player?.getPlaylistIndex?.();
-  if(!pl.length){const id=player?.getVideoData?.()?.video_id; ol.innerHTML=id?'':'<li class="empty">재생목록 링크나 믹스 링크를 넣으면 여기에 곡이 나와요.</li>'; if(id) pl.push(id)}
-  if(!pl.length) return;
+  const ol=$('#q-list'); const pl=(player?.getPlaylist?.()||[]).slice(); const cur=player?.getPlaylistIndex?.();
+  if(!pl.length){const id=player?.getVideoData?.()?.video_id; if(id) pl.push(id)}
+  if(!pl.length){ol.innerHTML='<li class="empty">재생 중인 곡이 없어요.</li>';return}
   ol.innerHTML='';
   pl.forEach((id,i)=>{
     const li=document.createElement('li'); if(i===cur||pl.length===1) li.className='cur';
-    li.innerHTML=`<button type="button"><span class="n">${i+1}</span><img loading="lazy" alt="" src="https://i.ytimg.com/vi/${id}/mqdefault.jpg"><span class="t"></span></button>`;
+    li.innerHTML=`<button type="button" class="main"><span class="n">${i+1}</span><img loading="lazy" alt="" src="https://i.ytimg.com/vi/${id}/mqdefault.jpg"><span class="t"></span></button>`;
     li.querySelector('.t').textContent=titles[id]||'불러오는 중…';
-    li.querySelector('button').onclick=()=>{ if(pl.length>1) player.playVideoAt(i); $('#queue').classList.remove('open') };
+    li.querySelector('.main').onclick=()=>{ if(pl.length>1) player.playVideoAt(i); $('#queue').classList.remove('open') };
     ol.appendChild(li);
-    if(!titles[id]) fetchTitle(id).then(t=>{li.querySelector('.t').textContent=t||`트랙 ${i+1}`});
+    if(!titles[id]) fetchTitle('https://www.youtube.com/watch?v='+id,id).then(t=>{li.querySelector('.t').textContent=t||`트랙 ${i+1}`});
   });
   ol.querySelector('.cur')?.scrollIntoView({block:'nearest'});
 }
-const tq={};
-function fetchTitle(id){
-  return tq[id]||(tq[id]=fetch(`https://noembed.com/embed?url=${encodeURIComponent('https://www.youtube.com/watch?v='+id)}`).then(r=>r.json()).then(j=>{if(j.title)titles[id]=j.title;return j.title}).catch(()=>null));
-}
 
-/* form */
+/* ---------- bar ---------- */
 $('#bar').onsubmit=e=>{
   e.preventDefault(); const src=parse($('#url').value);
   if(!src){toast('유튜브 영상·재생목록 링크를 넣어주세요');return}
   $('#url').blur(); store.set('last',$('#url').value.trim()); load(src);
 };
-$('#url').addEventListener('paste',()=>setTimeout(()=>{const s=parse($('#url').value); if(s){ $('#bar').requestSubmit() }},50));
+// pasting starts right away only when nothing is playing; otherwise choose ↵ (바로 재생) or 예약
+$('#url').addEventListener('paste',()=>setTimeout(()=>{
+  if(!parse($('#url').value)) return;
+  if(!current) $('#bar').requestSubmit(); else toast('↵ 바로 재생 · 오른쪽 버튼으로 예약');
+},50));
 
 /* start: ?u= link from Shortcuts / share, else last link */
 (function(){
+  saveReserve();
   const q=new URLSearchParams(location.search); const fromQ=q.get('u')||q.get('url');
   const last=fromQ||store.get('last','');
   if(last){ $('#url').value=last; const s=parse(last); if(s) pending=s }
