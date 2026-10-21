@@ -26,6 +26,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
 html,body{height:100%;margin:0}
 body{background:radial-gradient(120% 90% at 50% 35%,var(--room) 0%,var(--room-deep) 100%);color:var(--ink);font:15px/1.45 var(--ui);overflow:hidden;
   padding:env(safe-area-inset-top,0) max(16px,env(safe-area-inset-right,0)) env(safe-area-inset-bottom,0) max(16px,env(safe-area-inset-left,0));
@@ -262,6 +263,8 @@ body.playing.idle #bar,body.playing.idle .deck-ctrls{opacity:.28}
   <div class="row"><span>레코드 천천히 회전</span><button class="sw" role="switch" data-cls="slow" aria-checked="true" aria-label="레코드 천천히 회전"></button></div>
   <div class="row" id="proj-row"><span>프로젝터 효과</span><button class="sw" role="switch" data-cls="projector" aria-checked="true" aria-label="프로젝터 효과"></button></div>
   <div class="row"><span>영상 색 반사</span><button class="sw" role="switch" data-cls="reflect" aria-checked="true" aria-label="영상 색 반사"></button></div>
+  <div class="row"><span>백그라운드 재생</span><button class="sw" role="switch" id="sw-bg" aria-checked="true" aria-label="백그라운드 재생"></button></div>
+  <div class="row"><span>강하게 유지 <small>실험</small></span><button class="sw" role="switch" id="sw-keep" aria-checked="false" aria-label="백그라운드 강하게 유지"></button></div>
   <div class="row"><span>화면 꺼짐 방지</span><button class="sw" role="switch" id="sw-wake" aria-checked="false" aria-label="화면 꺼짐 방지"></button></div>
   <div class="slider-block">
     <div class="row"><span>빛 퍼짐</span><small id="spread-v">75%</small></div>
@@ -273,6 +276,7 @@ body.playing.idle #bar,body.playing.idle .deck-ctrls{opacity:.28}
   <div class="links">
     <a id="yt-link" href="https://www.youtube.com" target="_blank" rel="noopener">유튜브 페이지 보기</a>
   </div>
+  <p class="note">백그라운드 재생: 다른 앱으로 가거나 화면을 끄면 아이패드가 멈출 때가 있어요. 그럴 땐 제어 센터(오른쪽 위에서 쓸어내리기)나 잠금 화면의 ▶를 누르면 이어서 나와요. 돌아오면 자동으로 다시 재생돼요.</p>
   <p class="note">광고는 유튜브가 직접 넣는 거라 여기서 끌 수 없어요. 사파리에서 YouTube Premium 계정으로 로그인해 두면 이 화면에서도 광고 없이 나와요.</p>
   <p class="note">음량 슬라이더는 0으로 내리면 음소거돼요. 아이패드는 기기 음량 버튼이 실제 음량을 정해요.</p>
 </aside>
@@ -302,7 +306,7 @@ function fillRange(el){el.style.setProperty('--p',(el.value-el.min)/(el.max-el.m
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* ---------- settings ---------- */
-const S=Object.assign({vop:70,spread:75,size:1,slow:true,projector:true,reflect:true,cc:false,vol:80,mode:'bg',blur:24},store.get('settings',{}));
+const S=Object.assign({vop:70,spread:75,size:1,slow:true,projector:true,reflect:true,cc:false,vol:80,mode:'bg',blur:24,bg:true,keep:false},store.get('settings',{}));
 function applySettings(){
   root.style.setProperty('--vop',S.vop/100); $('#s-vop').value=S.vop; $('#vop-v').textContent=S.vop+'%';
   root.style.setProperty('--spread',S.spread/100); $('#s-spread').value=S.spread; $('#spread-v').textContent=S.spread+'%';
@@ -314,6 +318,7 @@ function applySettings(){
   $('#blur-block').hidden=S.mode!=='bg'; $('#proj-row').hidden=S.mode!=='disc';
   ['slow','projector','reflect'].forEach(k=>{body.classList.toggle(k,S[k]);document.querySelector(`[data-cls=${k}]`).setAttribute('aria-checked',S[k])});
   root.style.setProperty('--rev',S.slow?'5.5s':'1.8s');
+  $('#sw-bg').setAttribute('aria-checked',S.bg); $('#sw-keep').setAttribute('aria-checked',S.keep);
   $('#btn-cc').setAttribute('aria-pressed',S.cc); $('#vol').value=S.vol;
   document.querySelectorAll('input[type=range]').forEach(fillRange);
   $('#vol-wave').style.opacity=S.vol>0?1:0;
@@ -404,10 +409,14 @@ function onErr(e){
 function onState(e){
   const st=e.data, P=YT.PlayerState;
   if(st===P.PLAYING){
-    started=true;body.classList.add('playing');body.classList.remove('needs-tap');if(S.cc)ccOn();
+    started=true;wantPlay=true;userPaused=false;resumeTries=0;body.classList.add('playing');body.classList.remove('needs-tap');if(S.cc)ccOn();keepAlive(true);
     if(seekTo){const pl=player.getPlaylist()||[];const i=pl.indexOf(seekTo);const want=seekTo;seekTo=null;if(i>0&&player.getPlaylistIndex()!==i&&player.getVideoData().video_id!==want)player.playVideoAt(i)}
   }
-  else if(st===P.PAUSED||st===P.CUED){body.classList.remove('playing')}
+  else if(st===P.PAUSED||st===P.CUED){
+    body.classList.remove('playing');
+    if(userPaused){wantPlay=false;keepAlive(false)}
+    else if(st===P.PAUSED&&document.hidden) tryResume();   // paused by iPad when leaving the app
+  }
   else if(st===P.ENDED){
     body.classList.remove('playing');
     const pl=player.getPlaylist?.()||[], i=player.getPlaylistIndex?.();
@@ -415,7 +424,7 @@ function onState(e){
     if(atEnd&&reserve.length) playReserved();
   }
   $('#play-ic').innerHTML=body.classList.contains('playing')?'<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/>':'<path d="M7 4.5v15l12.5-7.5z"/>';
-  setArm(); updateMeta();
+  setArm(); updateMeta(); setSessionState();
 }
 function updateMeta(){
   if(!player||!player.getVideoData) return;
@@ -430,6 +439,7 @@ function updateMeta(){
     if(reserve.length) extra+=` · 예약 ${reserve.length}곡`;
     $('#now').innerHTML='<b></b>'+esc(extra); $('#now b').textContent=d.title;
   }
+  setSession(id,d);
   $('#yt-link').href=`https://www.youtube.com/watch?v=${id}`+(current?.list?`&list=${current.list}`:'');
   if($('#queue').classList.contains('open')) renderQueue();
 }
@@ -448,7 +458,7 @@ function togglePlay(){
     if(reserve.length){playReserved();return}
     $('#url').focus(); toast('먼저 유튜브 링크를 넣어주세요'); return }
   if(!started){body.classList.add('needs-tap');try{player.playVideo()}catch{} return}
-  body.classList.contains('playing')?player.pauseVideo():player.playVideo();
+  if(body.classList.contains('playing')){userPaused=true;player.pauseVideo()}else{userPaused=false;player.playVideo()}
 }
 function next(){
   if(!player) return;
@@ -460,15 +470,73 @@ function next(){
 function peek(on){body.classList.toggle('peek',on)}
 $('#btn-peek').onclick=()=>{if(!player){toast('먼저 유튜브 링크를 넣어주세요');return} peek(true)};
 $('#peek-close').onclick=()=>peek(false); $('#peek-bg').onclick=()=>peek(false);
-$('#disc-hit').onclick=togglePlay; $('#btn-play').onclick=togglePlay;
+$('#disc-hit').onclick=()=>{primeKeep();togglePlay()}; $('#btn-play').onclick=()=>{primeKeep();togglePlay()};
 $('#btn-next').onclick=next;
-$('#btn-prev').onclick=()=>{if(!player)return; const pl=player.getPlaylist?.(); (pl&&pl.length>1&&player.getPlaylistIndex()>0&&player.getCurrentTime()<4)?player.previousVideo():player.seekTo(0,true)};
+function prev(){if(!player)return; const pl=player.getPlaylist?.(); (pl&&pl.length>1&&player.getPlaylistIndex()>0&&player.getCurrentTime()<4)?player.previousVideo():player.seekTo(0,true)}
+$('#btn-prev').onclick=prev;
 
 function applyVolume(){ if(!player?.setVolume) return; if(S.vol===0){player.mute()}else{player.unMute();player.setVolume(S.vol)} }
 $('#vol').oninput=e=>{S.vol=+e.target.value;applySettings();applyVolume()};
 
 function ccOn(){try{player.loadModule('captions');player.setOption('captions','track',{languageCode:'ko'})}catch{}}
 $('#btn-cc').onclick=()=>{S.cc=!S.cc;applySettings(); if(!player)return; if(S.cc){ccOn();toast('자막 켬 (영상에 자막이 있을 때)')}else{try{player.unloadModule('captions')}catch{} toast('자막 끔')}};
+
+
+/* ---------- background playback ---------- */
+let wantPlay=false, userPaused=false, resumeTries=0, resumeT=null;
+$('#sw-bg').onclick=()=>{S.bg=!S.bg;applySettings();toast(S.bg?'백그라운드 재생 켬':'백그라운드 재생 끔')};
+$('#sw-keep').onclick=()=>{S.keep=!S.keep;applySettings(); if(S.keep){primeKeep();if(wantPlay)keepAlive(true);toast('강하게 유지 켬 · 소리가 끊기면 다시 꺼주세요')}else{keepAlive(false)}};
+
+// iPad pauses the YouTube frame when the app goes to the background; nudge it back a few times
+function tryResume(){
+  if(!S.bg||!wantPlay||userPaused||!player) return;
+  clearTimeout(resumeT);
+  if(resumeTries++>6) return;
+  resumeT=setTimeout(()=>{
+    try{ if(player.getPlayerState()!==YT.PlayerState.PLAYING){ player.playVideo(); tryResume(); } }catch{}
+  },400*resumeTries);
+}
+document.addEventListener('visibilitychange',()=>{
+  if(!player) return;
+  if(document.hidden){ resumeTries=0; if(wantPlay&&S.bg) tryResume(); }
+  else if(wantPlay&&!userPaused){ resumeTries=0; try{ if(player.getPlayerState()!==YT.PlayerState.PLAYING) player.playVideo() }catch{} }
+});
+addEventListener('pageshow',()=>{ if(player&&wantPlay&&!userPaused){try{player.playVideo()}catch{}} });
+
+// lock screen / Control Center: title, artwork and buttons
+let sessionWired=false;
+function setSession(id,d){
+  if(!('mediaSession' in navigator)) return;
+  try{
+    navigator.mediaSession.metadata=new MediaMetadata({title:d.title||'TurnTable',artist:d.author||'',album:'TurnTable Pad',
+      artwork:[{src:`https://i.ytimg.com/vi/${id}/hqdefault.jpg`,sizes:'480x360',type:'image/jpeg'},{src:`https://i.ytimg.com/vi/${id}/mqdefault.jpg`,sizes:'320x180',type:'image/jpeg'}]});
+  }catch{}
+  if(sessionWired) return; sessionWired=true;
+  const h={play:()=>{userPaused=false;player?.playVideo()},pause:()=>{userPaused=true;player?.pauseVideo()},nexttrack:()=>next(),previoustrack:()=>prev(),
+    seekbackward:()=>{try{player.seekTo(Math.max(0,player.getCurrentTime()-10),true)}catch{}},seekforward:()=>{try{player.seekTo(player.getCurrentTime()+10,true)}catch{}}};
+  for(const k in h){try{navigator.mediaSession.setActionHandler(k,h[k])}catch{}}
+}
+function setSessionState(){ if('mediaSession' in navigator){try{navigator.mediaSession.playbackState=body.classList.contains('playing')?'playing':(player?'paused':'none')}catch{}} }
+
+// "강하게 유지": a silent looping track in the page keeps its audio session (and timers) alive
+let keepEl=null;
+function silentWav(){
+  const rate=8000,n=rate*2,buf=new ArrayBuffer(44+n),v=new DataView(buf);
+  const w=(o,str)=>{for(let i=0;i<str.length;i++)v.setUint8(o+i,str.charCodeAt(i))};
+  w(0,'RIFF');v.setUint32(4,36+n,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,rate,true);v.setUint32(28,rate,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,'data');v.setUint32(40,n,true);
+  for(let i=0;i<n;i++)v.setUint8(44+i,128);
+  return URL.createObjectURL(new Blob([buf],{type:'audio/wav'}));
+}
+function primeKeep(){                       // must run inside a tap
+  if(!S.keep) return;
+  if(!keepEl){keepEl=new Audio(silentWav());keepEl.loop=true;keepEl.setAttribute('playsinline','');keepEl.preload='auto'}
+  keepEl.play().then(()=>{ if(!wantPlay) keepEl.pause() }).catch(()=>{});
+}
+function keepAlive(on){
+  if(!keepEl) return;
+  if(on&&S.keep){keepEl.play().catch(()=>{})} else keepEl.pause();
+}
 
 /* ---------- reserve queue (다음에 재생) ---------- */
 let reserve=store.get('reserve',[]).filter(r=>r&&r.src);
@@ -529,7 +597,7 @@ function renderQueue(){
 $('#bar').onsubmit=e=>{
   e.preventDefault(); const src=parse($('#url').value);
   if(!src){toast('유튜브 영상·재생목록 링크를 넣어주세요');return}
-  $('#url').blur(); store.set('last',$('#url').value.trim()); load(src);
+  $('#url').blur(); store.set('last',$('#url').value.trim()); primeKeep(); userPaused=false; load(src);
 };
 // pasting starts right away only when nothing is playing; otherwise choose ↵ (바로 재생) or 예약
 $('#url').addEventListener('paste',()=>setTimeout(()=>{
