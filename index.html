@@ -99,6 +99,7 @@ body.peek #video-wrap{position:fixed;z-index:40;left:50%;top:50%;right:auto;bott
   border-radius:14px;opacity:1;pointer-events:auto;-webkit-mask-image:none;mask-image:none;box-shadow:0 30px 80px rgba(0,0,0,.7)}
 body.peek #video-wrap iframe,body.peek #player{top:0;left:0;width:100%;height:100%;transform:none;filter:none}
 body.peek #fx{display:none}
+#pip-video{position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1}
 #peek-bg{position:fixed;inset:0;z-index:39;background:rgba(8,10,14,.82);display:none}
 body.peek #peek-bg{display:block}
 #peek-close{position:fixed;z-index:41;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);height:44px;padding:0 22px;border-radius:99px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);font-weight:500;display:none}
@@ -239,7 +240,7 @@ body.playing.idle #bar,body.playing.idle .deck-ctrls{opacity:.28}
       <button class="glass-btn round" id="btn-settings" aria-label="설정">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M4.2 7.5l2 1.2M17.8 15.3l2 1.2M4.2 16.5l2-1.2M17.8 8.7l2-1.2"/><circle cx="12" cy="12" r="7"/></svg>
       </button>
-      <button class="glass-btn" id="btn-mini" aria-label="작은 플레이어로 보기"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="11" width="7" height="6" rx="1.2" fill="currentColor" stroke="none"/></svg></button>
+      <button class="glass-btn" id="btn-pip" aria-label="작은 화면 띄우기"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="11" width="7" height="6" rx="1.2" fill="currentColor" stroke="none"/></svg></button>
       <button class="glass-btn" id="btn-peek" aria-label="영상 크게 보기 (광고 건너뛰기)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg></button>
       <button class="glass-btn cc" id="btn-cc" aria-pressed="false" aria-label="자막">CC</button>
       <div class="vol">
@@ -259,7 +260,7 @@ body.playing.idle #bar,body.playing.idle .deck-ctrls{opacity:.28}
     <button type="button" class="ic" id="btn-reserve" aria-label="예약에 추가"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h10M4 12h10M4 17h6"/><path d="M18 13v8M14 17h8"/></svg></button>
     <button type="button" class="ic mini-only" id="btn-peek2" aria-label="영상 크게 보기 (광고 건너뛰기)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg></button>
     <button type="button" class="ic mini-only" id="btn-settings2" aria-label="설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M4.2 7.5l2 1.2M17.8 15.3l2 1.2M4.2 16.5l2-1.2M17.8 8.7l2-1.2"/><circle cx="12" cy="12" r="7"/></svg></button>
-    <button type="button" class="ic mini-only" id="btn-full" aria-label="크게 보기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <button type="button" class="ic mini-only" id="btn-pip2" aria-label="작은 화면 띄우기"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="11" width="7" height="6" rx="1.2" fill="currentColor" stroke="none"/></svg></button>
     <button type="button" class="ic" id="btn-queue" aria-label="재생목록"><span class="badge" id="q-badge" hidden></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
   </form>
   <div id="now">링크를 넣으면 영상이 턴테이블 뒤로 흐리게 비쳐요. 영상 · 재생목록 · 믹스 모두 돼요.</div>
@@ -283,6 +284,7 @@ body.playing.idle #bar,body.playing.idle .deck-ctrls{opacity:.28}
   <div class="row"><span>레코드 천천히 회전</span><button class="sw" role="switch" data-cls="slow" aria-checked="true" aria-label="레코드 천천히 회전"></button></div>
   <div class="row" id="proj-row"><span>프로젝터 효과</span><button class="sw" role="switch" data-cls="projector" aria-checked="true" aria-label="프로젝터 효과"></button></div>
   <div class="row"><span>영상 색 반사</span><button class="sw" role="switch" data-cls="reflect" aria-checked="true" aria-label="영상 색 반사"></button></div>
+  <div class="row"><span>나갈 때 작은 화면 자동</span><button class="sw" role="switch" id="sw-autopip" aria-checked="true" aria-label="앱에서 나갈 때 작은 화면 자동으로 띄우기"></button></div>
   <div class="row"><span>백그라운드 재생</span><button class="sw" role="switch" id="sw-bg" aria-checked="true" aria-label="백그라운드 재생"></button></div>
   <div class="row"><span>강하게 유지 <small>실험</small></span><button class="sw" role="switch" id="sw-keep" aria-checked="false" aria-label="백그라운드 강하게 유지"></button></div>
   <div class="row"><span>화면 꺼짐 방지</span><button class="sw" role="switch" id="sw-wake" aria-checked="false" aria-label="화면 꺼짐 방지"></button></div>
@@ -313,6 +315,7 @@ body.playing.idle #bar,body.playing.idle .deck-ctrls{opacity:.28}
   <ol id="q-list"></ol>
 </aside>
 
+<video id="pip-video" muted playsinline webkit-playsinline autopictureinpicture aria-hidden="true"></video>
 <div id="peek-bg"></div>
 <div id="peek-tip">광고가 나오면 영상 안의 ‘건너뛰기’를 탭하세요</div>
 <button id="peek-close" type="button">턴테이블로 돌아가기</button>
@@ -326,7 +329,7 @@ function fillRange(el){el.style.setProperty('--p',(el.value-el.min)/(el.max-el.m
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* ---------- settings ---------- */
-const S=Object.assign({vop:70,spread:75,size:1,slow:true,projector:true,reflect:true,cc:false,vol:80,mode:'bg',blur:24,bg:true,keep:false},store.get('settings',{}));
+const S=Object.assign({vop:70,spread:75,size:1,slow:true,projector:true,reflect:true,cc:false,vol:80,mode:'bg',blur:24,bg:true,keep:false,autopip:true},store.get('settings',{}));
 function applySettings(){
   root.style.setProperty('--vop',S.vop/100); $('#s-vop').value=S.vop; $('#vop-v').textContent=S.vop+'%';
   root.style.setProperty('--spread',S.spread/100); $('#s-spread').value=S.spread; $('#spread-v').textContent=S.spread+'%';
@@ -338,7 +341,7 @@ function applySettings(){
   $('#blur-block').hidden=S.mode!=='bg'; $('#proj-row').hidden=S.mode!=='disc';
   ['slow','projector','reflect'].forEach(k=>{body.classList.toggle(k,S[k]);document.querySelector(`[data-cls=${k}]`).setAttribute('aria-checked',S[k])});
   root.style.setProperty('--rev',S.slow?'5.5s':'1.8s');
-  $('#sw-bg').setAttribute('aria-checked',S.bg); $('#sw-keep').setAttribute('aria-checked',S.keep);
+  $('#sw-bg').setAttribute('aria-checked',S.bg); $('#sw-autopip').setAttribute('aria-checked',S.autopip); $('#pip-video').autoPictureInPicture=S.autopip; $('#sw-keep').setAttribute('aria-checked',S.keep);
   $('#btn-cc').setAttribute('aria-pressed',S.cc); $('#vol').value=S.vol;
   document.querySelectorAll('input[type=range]').forEach(fillRange);
   $('#vol-wave').style.opacity=S.vol>0?1:0;
@@ -429,7 +432,7 @@ function onErr(e){
 function onState(e){
   const st=e.data, P=YT.PlayerState;
   if(st===P.PLAYING){
-    started=true;wantPlay=true;userPaused=false;resumeTries=0;body.classList.add('playing');body.classList.remove('needs-tap');if(S.cc)ccOn();keepAlive(true);
+    started=true;wantPlay=true;userPaused=false;resumeTries=0;body.classList.add('playing');body.classList.remove('needs-tap');if(S.cc)ccOn();keepAlive(true); if(S.autopip) preparePip();
     if(seekTo){const pl=player.getPlaylist()||[];const i=pl.indexOf(seekTo);const want=seekTo;seekTo=null;if(i>0&&player.getPlaylistIndex()!==i&&player.getVideoData().video_id!==want)player.playVideoAt(i)}
   }
   else if(st===P.PAUSED||st===P.CUED){
@@ -508,11 +511,110 @@ const smallMQ=matchMedia('(max-width: 620px), (max-height: 560px)');
 let miniForce=null;
 function applyMini(){ const on=miniForce===null?smallMQ.matches:miniForce; body.classList.toggle('compact',on) }
 (smallMQ.addEventListener?smallMQ.addEventListener('change',()=>{miniForce=null;applyMini()}):smallMQ.addListener(()=>{miniForce=null;applyMini()}));
-$('#btn-mini').onclick=()=>{miniForce=true;applyMini()};
-$('#btn-full').onclick=()=>{miniForce=false;applyMini(); if(smallMQ.matches) toast('창이 작아서 화면이 좁아요 · 창을 키우면 자동으로 커져요')};
 $('#btn-settings2').onclick=()=>openSheet('settings');
 $('#btn-peek2').onclick=()=>$('#btn-peek').click();
 applyMini();
+
+
+/* ---------- floating small window (system Picture-in-Picture) ----------
+   The YouTube frame itself can't be put into PiP from this page, so we draw a live
+   "now playing" turntable on a canvas, stream it into a <video>, and float that. */
+const pipV=$('#pip-video'), PW=640, PH=360;
+const pipC=document.createElement('canvas'); pipC.width=PW; pipC.height=PH;
+const pctx=pipC.getContext('2d');
+let pipArt=null, pipArtId=null, pipAngle=0, pipReady=false, pipTimer=null;
+pipV.autoPictureInPicture=S.autopip;
+function pipLoadArt(id){
+  if(!id||id===pipArtId) return; pipArtId=id;
+  const im=new Image(); im.crossOrigin='anonymous';
+  im.onload=()=>{pipArt=im}; im.onerror=()=>{pipArt=null};
+  im.src=`https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+}
+const tiny=document.createElement('canvas'); tiny.width=32; tiny.height=18; const tctx=tiny.getContext('2d');
+function pipDraw(){
+  const playing=body.classList.contains('playing');
+  if(playing) pipAngle+=0.06;
+  const d=player?.getVideoData?.()||{}; if(d.video_id) pipLoadArt(d.video_id);
+  // background: album art blown up from a tiny copy = soft blur
+  pctx.fillStyle='#1d2531'; pctx.fillRect(0,0,PW,PH);
+  if(pipArt){
+    try{ tctx.drawImage(pipArt,0,0,32,18); pctx.imageSmoothingEnabled=true; pctx.drawImage(tiny,-20,-20,PW+40,PH+40) }catch{}
+    pctx.fillStyle='rgba(10,14,20,.45)'; pctx.fillRect(0,0,PW,PH);
+  }
+  // record
+  const cx=PH/2+10, cy=PH/2, R=PH*0.42;
+  pctx.save(); pctx.translate(cx,cy); pctx.rotate(pipAngle);
+  pctx.beginPath(); pctx.arc(0,0,R+5,0,7); pctx.fillStyle='#9aa1ab'; pctx.fill();
+  pctx.beginPath(); pctx.arc(0,0,R,0,7); pctx.fillStyle='#111'; pctx.fill();
+  pctx.strokeStyle='rgba(255,255,255,.06)'; pctx.lineWidth=1;
+  for(let r=R*0.42;r<R-4;r+=5){pctx.beginPath();pctx.arc(0,0,r,0,7);pctx.stroke()}
+  pctx.strokeStyle='rgba(255,255,255,.06)'; pctx.lineWidth=R*0.52; pctx.lineCap='butt';
+  pctx.beginPath(); pctx.arc(0,0,R*0.69,-0.9,-0.2); pctx.stroke(); pctx.beginPath(); pctx.arc(0,0,R*0.69,2.24,2.94); pctx.stroke();
+  pctx.beginPath(); pctx.arc(0,0,R*0.34,0,7); pctx.save(); pctx.clip();
+  if(pipArt){ try{pctx.drawImage(pipArt,-R*0.34*1.78,-R*0.34,R*0.68*1.78,R*0.68)}catch{pctx.fillStyle='#e85d4a';pctx.fill()} } else { pctx.fillStyle='#e85d4a'; pctx.fill() }
+  pctx.restore();
+  pctx.beginPath(); pctx.arc(0,0,5,0,7); pctx.fillStyle='#dfe3e8'; pctx.fill();
+  pctx.restore();
+  // tonearm
+  pctx.strokeStyle='#d9dee6'; pctx.lineWidth=6; pctx.lineCap='round';
+  const ax=cx+R+30, ay=cy-R+6, ang=(playing?0.55:0.15);
+  pctx.beginPath(); pctx.moveTo(ax,ay); pctx.lineTo(ax-Math.sin(ang)*R*1.25,ay+Math.cos(ang)*R*1.25); pctx.stroke();
+  pctx.beginPath(); pctx.arc(ax,ay,10,0,7); pctx.fillStyle='#c6ccd5'; pctx.fill();
+  // text
+  const tx=cx+R+60, tw=PW-tx-24;
+  pctx.fillStyle='#eef2f7'; pctx.font='600 26px -apple-system,"Apple SD Gothic Neo",sans-serif'; pctx.textBaseline='top';
+  const title=(d.title||'TurnTable'); wrapText(title,tx,cy-58,tw,32,2);
+  pctx.fillStyle='rgba(238,242,247,.7)'; pctx.font='18px -apple-system,"Apple SD Gothic Neo",sans-serif';
+  pctx.fillText(clip(d.author||(player?'':'링크를 넣어주세요'),tw),tx,cy+14);
+  // progress
+  let f=0; try{const du=player.getDuration(),t=player.getCurrentTime(); if(du>0) f=t/du}catch{}
+  pctx.fillStyle='rgba(255,255,255,.25)'; pctx.fillRect(tx,cy+56,tw,4);
+  pctx.fillStyle='#e85d4a'; pctx.fillRect(tx,cy+56,tw*f,4);
+  if(reserve.length){pctx.fillStyle='rgba(238,242,247,.6)';pctx.font='15px -apple-system,sans-serif';pctx.fillText(`다음 예약 ${reserve.length}곡`,tx,cy+74)}
+}
+function clip(t,w){ if(pctx.measureText(t).width<=w) return t; while(t.length&&pctx.measureText(t+'…').width>w) t=t.slice(0,-1); return t+'…' }
+function wrapText(t,x,y,w,lh,max){
+  const words=t.split(' '); let line='', n=0;
+  for(let i=0;i<words.length;i++){
+    const test=line?line+' '+words[i]:words[i];
+    if(pctx.measureText(test).width>w&&line){ if(n===max-1){pctx.fillText(clip(line+' '+words.slice(i).join(' '),w),x,y+n*lh);return} pctx.fillText(line,x,y+n*lh); n++; line=words[i] }
+    else line=test;
+  }
+  pctx.fillText(clip(line,w),x,y+n*lh);
+}
+function preparePip(){
+  if(pipReady) return true;
+  if(!pipC.captureStream) return false;
+  try{
+    pipDraw(); pipV.srcObject=pipC.captureStream(20);
+    pipV.play().catch(()=>{});
+    clearInterval(pipTimer); pipTimer=setInterval(pipDraw,50);
+    pipReady=true;
+  }catch{ return false }
+  return true;
+}
+function inPip(){ return document.pictureInPictureElement===pipV || pipV.webkitPresentationMode==='picture-in-picture' }
+function openPip(){
+  if(!player){toast('먼저 유튜브 링크를 넣어주세요');return}
+  if(!preparePip()){toast('이 브라우저는 작은 화면을 지원하지 않아요');return}
+  if(inPip()){ closePip(); return }
+  try{
+    if(pipV.webkitSupportsPresentationMode&&pipV.webkitSupportsPresentationMode('picture-in-picture')){ pipV.webkitSetPresentationMode('picture-in-picture'); return }
+    if(document.pictureInPictureEnabled&&pipV.requestPictureInPicture){ pipV.requestPictureInPicture().catch(()=>toast('작은 화면을 띄우지 못했어요 · 사파리 최신 버전에서 다시 해보세요')); return }
+  }catch{}
+  toast('이 브라우저는 작은 화면을 지원하지 않아요');
+}
+function closePip(){
+  try{ if(document.pictureInPictureElement) document.exitPictureInPicture(); else if(pipV.webkitSetPresentationMode) pipV.webkitSetPresentationMode('inline') }catch{}
+}
+$('#btn-pip').onclick=openPip; $('#btn-pip2').onclick=openPip;
+$('#sw-autopip').onclick=()=>{S.autopip=!S.autopip;applySettings();if(S.autopip)preparePip()};
+// play / pause pressed on the floating window → control the record
+pipV.addEventListener('pause',()=>{ if(inPip()&&player){ userPaused=true; player.pauseVideo(); setTimeout(()=>pipV.play().catch(()=>{}),50) } });
+pipV.addEventListener('play',()=>{ if(inPip()&&player&&userPaused&&!body.classList.contains('playing')){ userPaused=false; player.playVideo() } });
+const pipBtnState=()=>{const on=inPip();['#btn-pip','#btn-pip2'].forEach(s=>$(s).setAttribute('aria-pressed',on))};
+pipV.addEventListener('enterpictureinpicture',pipBtnState); pipV.addEventListener('leavepictureinpicture',pipBtnState);
+pipV.addEventListener('webkitpresentationmodechanged',pipBtnState);
 
 /* ---------- background playback ---------- */
 let wantPlay=false, userPaused=false, resumeTries=0, resumeT=null;
